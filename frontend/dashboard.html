@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Compliance OS — Ledger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root{
+    --ink:#12151a;
+    --paper:#1a1e25;
+    --paper-raised:#20252d;
+    --line:#2c323c;
+    --text:#e8e4da;
+    --muted:#8b93a1;
+    --gold:#c99a3c;
+    --gold-dim:#8a6f37;
+    --risk:#c1443b;
+    --risk-bg:rgba(193,68,59,0.12);
+    --warn:#c9973c;
+    --warn-bg:rgba(201,151,60,0.12);
+    --ok:#4c8c6b;
+    --ok-bg:rgba(76,140,107,0.12);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    line-height:1.5;
+  }
+
+  .wrap{max-width:1080px;margin:0 auto;padding:48px 28px 80px;}
+
+  header{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:36px;gap:24px;flex-wrap:wrap;
+  }
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:34px;margin:0 0 6px;letter-spacing:-0.01em;}
+  .org-meta{color:var(--muted);font-size:13.5px;}
+  .org-meta span{color:var(--text);}
+
+  .stamp{
+    width:118px;height:118px;border-radius:50%;border:2px solid var(--gold-dim);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;position:relative;
+  }
+  .stamp::before{content:'';position:absolute;inset:6px;border:1px dashed var(--gold-dim);border-radius:50%;opacity:0.6;}
+  .stamp .pct{font-family:'Fraunces',serif;font-size:30px;font-weight:700;color:var(--gold);}
+  .stamp .label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+
+  .intake{background:var(--paper);border:1px solid var(--line);margin-bottom:44px;}
+  .intake-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:12px;}
+  .intake-head h2{font-family:'Fraunces',serif;font-size:19px;font-weight:600;margin:0;}
+  .intake-head .sub{color:var(--muted);font-size:12.5px;margin-top:3px;}
+
+  .tabs{display:flex;gap:2px;background:var(--line);border:1px solid var(--line);}
+  .tab-btn{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.05em;text-transform:uppercase;background:var(--paper);color:var(--muted);border:none;padding:9px 14px;cursor:pointer;}
+  .tab-btn.active{background:var(--paper-raised);color:var(--gold);}
+
+  .intake-body{padding:24px 22px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .field-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field.full{grid-column:1 / -1;}
+  .field label{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);}
+  .field input[type=text], .field input[type=number], .field select, textarea{
+    background:var(--ink);border:1px solid var(--line);color:var(--text);
+    padding:9px 11px;font-family:'Inter',sans-serif;font-size:13.5px;border-radius:3px;
+  }
+  .field input:focus, .field select:focus, textarea:focus{outline:1px solid var(--gold-dim);border-color:var(--gold-dim);}
+  .checkline{display:flex;align-items:center;gap:8px;padding-top:22px;}
+  .checkline input{width:16px;height:16px;accent-color:var(--gold);}
+  .checkline label{font-size:13px;color:var(--text);}
+
+  .doc-table{width:100%;border-collapse:collapse;margin-top:6px;}
+  .doc-table th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:0 8px 8px;font-weight:500;}
+  .doc-table td{padding:5px 8px;}
+  .doc-table input, .doc-table select{width:100%;}
+  .row-remove{background:none;border:1px solid var(--line);color:var(--muted);width:28px;height:28px;border-radius:3px;cursor:pointer;font-size:14px;line-height:1;}
+  .row-remove:hover{border-color:var(--risk);color:var(--risk);}
+
+  .btn{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:0.05em;text-transform:uppercase;padding:9px 16px;border-radius:3px;cursor:pointer;border:1px solid var(--line);background:var(--paper-raised);color:var(--text);}
+  .btn:hover{border-color:var(--gold-dim);}
+  .btn-add{margin-top:10px;}
+  .btn-primary{background:var(--gold);border-color:var(--gold);color:#1a1206;font-weight:600;}
+  .btn-primary:hover{background:#d9ab48;}
+  .btn-ghost{background:transparent;color:var(--muted);}
+
+  .intake-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:18px;margin-top:18px;border-top:1px solid var(--line);flex-wrap:wrap;}
+  .error-msg{color:var(--risk);font-size:12.5px;font-family:'JetBrains Mono',monospace;}
+
+  textarea{width:100%;min-height:220px;font-family:'JetBrains Mono',monospace;font-size:12.5px;resize:vertical;}
+  .hint{color:var(--muted);font-size:12px;margin-top:8px;}
+
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:44px;}
+  .summary .cell{background:var(--paper);padding:18px 20px;}
+  .summary .num{font-family:'Fraunces',serif;font-size:26px;font-weight:600;}
+  .summary .cap{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+  .num.risk-high{color:var(--risk);}
+  .num.risk-med{color:var(--warn);}
+  .num.risk-ok{color:var(--ok);}
+
+  section{margin-bottom:48px;}
+  .section-head{display:flex;align-items:baseline;gap:10px;margin-bottom:18px;}
+  .section-head .idx{font-family:'JetBrains Mono',monospace;color:var(--gold-dim);font-size:13px;}
+  .section-head h2{font-family:'Fraunces',serif;font-size:20px;font-weight:600;margin:0;}
+  .section-head .sub{color:var(--muted);font-size:12.5px;margin-left:auto;}
+
+  table.ledger{width:100%;border-collapse:collapse;}
+  table.ledger thead th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:0 14px 10px;border-bottom:1px solid var(--line);font-weight:500;}
+  table.ledger tbody td{padding:14px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:top;}
+  table.ledger tbody tr:last-child td{border-bottom:none;}
+  .reg-id{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);}
+  .badge{display:inline-block;padding:3px 9px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.04em;text-transform:uppercase;}
+  .badge.High{background:var(--risk-bg);color:var(--risk);}
+  .badge.Medium{background:var(--warn-bg);color:var(--warn);}
+  .badge.Low{background:var(--ok-bg);color:var(--ok);}
+  .penalty{color:var(--muted);font-size:12.5px;}
+
+  .okr-grid{display:flex;flex-direction:column;gap:12px;}
+  .okr-card{background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--gold-dim);padding:18px 20px;}
+  .okr-card.p-high{border-left-color:var(--risk);}
+  .okr-card.p-med{border-left-color:var(--warn);}
+  .okr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:10px;}
+  .okr-obj{font-family:'Fraunces',serif;font-weight:600;font-size:16px;}
+  .okr-reg{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:3px;}
+  .priority{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-align:right;flex-shrink:0;}
+  .priority .score{font-size:18px;color:var(--text);display:block;}
+  .kr-list{list-style:none;margin:12px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;}
+  .kr-list li{font-size:12.5px;color:var(--muted);padding-left:16px;position:relative;}
+  .kr-list li::before{content:'○';position:absolute;left:0;color:var(--gold-dim);font-size:9px;top:4px;}
+  .risk-note{margin-top:12px;font-size:12px;color:var(--risk);opacity:0.85;}
+  .all-clear{border:1px dashed var(--ok);color:var(--ok);padding:24px;text-align:center;font-size:13.5px;}
+
+  footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:0.04em;flex-wrap:wrap;gap:8px;}
+
+  @media (max-width:720px){
+    .field-row{grid-template-columns:1fr;}
+    .summary{grid-template-columns:1fr 1fr;}
+    .kr-list{grid-template-columns:1fr;}
+    table.ledger thead{display:none;}
+    table.ledger tbody td{display:block;border-bottom:none;padding:4px 14px;}
+    table.ledger tbody tr{border-bottom:1px solid var(--line);padding:10px 0;display:block;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+
+  <header>
+    <div>
+      <div class="eyebrow">AI Compliance OS · Live Ledger</div>
+      <h1 id="org-title">Submit company details</h1>
+      <div class="org-meta" id="org-subtitle">Fill in the intake form below to generate a compliance report.</div>
+    </div>
+    <div class="stamp" id="stamp" style="visibility:hidden;">
+      <div class="pct" id="stamp-pct">—</div>
+      <div class="label">Compliant</div>
+    </div>
+  </header>
+
+  <div class="intake">
+    <div class="intake-head">
+      <div>
+        <h2>Company intake</h2>
+        <div class="sub">Enter details directly, or paste a JSON profile in any shape you have it</div>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="form" onclick="switchTab('form')">Guided form</button>
+        <button class="tab-btn" data-tab="json" onclick="switchTab('json')">Paste JSON</button>
+      </div>
+    </div>
+
+    <div class="intake-body">
+
+      <div class="panel active" id="panel-form">
+        <div class="field-row">
+          <div class="field full">
+            <label for="f-name">Organization name</label>
+            <input type="text" id="f-name" placeholder="e.g. SkyLogix Robotics Pvt Ltd">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="f-industry">Industry</label>
+            <input type="text" id="f-industry" list="industry-list" placeholder="e.g. Manufacturing">
+            <datalist id="industry-list">
+              <option value="Drone Delivery / Logistics">
+              <option value="Manufacturing">
+              <option value="Food Processing">
+              <option value="IT / Software Services">
+              <option value="Healthcare / Medical Devices">
+              <option value="Retail">
+            </datalist>
+          </div>
+          <div class="field">
+            <label for="f-country">Country</label>
+            <input type="text" id="f-country" value="India">
+          </div>
+          <div class="field">
+            <label for="f-employees">Employees</label>
+            <input type="number" id="f-employees" value="50" min="0">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <div class="checkline">
+              <input type="checkbox" id="f-exports">
+              <label for="f-exports">Company exports goods / services</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field full">
+          <label>Documents on file</label>
+          <table class="doc-table" id="doc-table">
+            <thead>
+              <tr><th style="width:34%">Document type</th><th style="width:22%">Issued</th><th style="width:22%">Expiry</th><th style="width:10%"></th></tr>
+            </thead>
+            <tbody id="doc-rows"></tbody>
+          </table>
+          <button class="btn btn-add btn-ghost" onclick="addDocRow()">+ Add document</button>
+        </div>
+
+        <datalist id="doctype-list">
+          <option value="GST Certificate">
+          <option value="ISO 9001 Certificate">
+          <option value="Remote Pilot License">
+          <option value="Labour Registration">
+          <option value="Export License">
+          <option value="Environmental Clearance Certificate">
+          <option value="FSSAI License">
+          <option value="Data Protection Policy">
+          <option value="CDSCO Medical Device License">
+          <option value="AOC-4 Filing Acknowledgement">
+          <option value="MGT-7 Annual Return Filing">
+          <option value="ADT-1 Auditor Appointment Filing">
+          <option value="DIR-3 KYC Confirmation">
+          <option value="DPT-3 Annual Return Filing">
+          <option value="MSME-1 Outstanding Dues Return">
+        </datalist>
+      </div>
+
+      <div class="panel" id="panel-json">
+        <div class="field full">
+          <label for="raw-json">Company profile JSON</label>
+          <textarea id="raw-json" spellcheck="false"></textarea>
+        </div>
+        <div class="hint">Any object with org_name, industry, employees, exports, and a documents[] array (type / issued / expiry) will work — extra fields are ignored.</div>
+      </div>
+
+      <div class="intake-footer">
+        <div style="display:flex; gap:10px;">
+          <button class="btn" onclick="loadSample()">Load sample company</button>
+          <button class="btn btn-ghost" onclick="clearForm()">Clear</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <span class="error-msg" id="error-msg"></span>
+          <button class="btn btn-primary" onclick="runAnalysis()">Run compliance analysis</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="results"></div>
+
+  <footer>
+    <span>Document → Regulation → Compliance → Gap → OKR → Report</span>
+    <span>ai-compliance-os · demo build</span>
+  </footer>
+</div>
+
+<script>
+const REGULATIONS = [
+  {"id":"DGCA-CAR-2025-4.2","authority":"DGCA","title":"Remote Pilot License for commercial drones above 5kg","applies_if":{"industry_contains":"Drone"},"required_document":"Remote Pilot License","penalty":"Grounding of fleet + fine up to INR 1,00,000"},
+  {"id":"GST-SEC-16","authority":"GST Council","title":"GST registration and periodic filing","applies_if":{"industry_contains":"*"},"required_document":"GST Certificate","penalty":"18% interest + late filing fee"},
+  {"id":"LABOUR-EMP-100","authority":"Labour Ministry","title":"Labour registration mandatory above 100 employees","applies_if":{"employees_gte":100},"required_document":"Labour Registration","penalty":"Suspension of operating license"},
+  {"id":"EXPORT-DGFT-01","authority":"DGFT","title":"Export license / IEC code for exporting entities","applies_if":{"exports":true},"required_document":"Export License","penalty":"Shipment seizure at customs"},
+  {"id":"ISO-9001-QMS","authority":"Voluntary Standard","title":"Quality Management System certification (buyer requirement)","applies_if":{"industry_contains":"*"},"required_document":"ISO 9001 Certificate","penalty":"Loss of enterprise contracts"},
+  {"id":"MOEF-EC-01","authority":"Pollution Control Board","title":"Environmental clearance for manufacturing units","applies_if":{"industry_contains":"Manufactur"},"required_document":"Environmental Clearance Certificate","penalty":"Plant shutdown order"},
+  {"id":"FSSAI-LIC-01","authority":"FSSAI","title":"Food business operating license","applies_if":{"industry_contains":"Food"},"required_document":"FSSAI License","penalty":"Seizure of stock + fine up to INR 5,00,000"},
+  {"id":"DPDP-ACT-01","authority":"MeitY","title":"Data protection compliance for entities handling personal data","applies_if":{"industry_contains":"IT"},"required_document":"Data Protection Policy","penalty":"Fine up to INR 250 crore under DPDP Act"},
+  {"id":"CDSCO-MED-01","authority":"CDSCO","title":"Manufacturing license for medical devices","applies_if":{"industry_contains":"Health"},"required_document":"CDSCO Medical Device License","penalty":"Product recall + license cancellation"},
+  {"id":"MCA-AOC4-01","authority":"MCA / Registrar of Companies","title":"Annual financial statement filing (Form AOC-4) within 30 days of AGM","applies_if":{"country_contains":"India"},"required_document":"AOC-4 Filing Acknowledgement","penalty":"Rs. 100/day per form with no cap; delays cascade into MGT-7"},
+  {"id":"MCA-MGT7-01","authority":"MCA / Registrar of Companies","title":"Annual return filing (Form MGT-7 / MGT-7A) within 60 days of AGM","applies_if":{"country_contains":"India"},"required_document":"MGT-7 Annual Return Filing","penalty":"Rs. 100/day per form; 3 consecutive years of non-filing triggers automatic 5-year director disqualification under Section 164(2)"},
+  {"id":"MCA-ADT1-01","authority":"MCA / Registrar of Companies","title":"Statutory auditor appointment (Form ADT-1) within 15 days of AGM","applies_if":{"country_contains":"India"},"required_document":"ADT-1 Auditor Appointment Filing","penalty":"AOC-4 cannot be filed without a valid auditor appointment on record"},
+  {"id":"MCA-DIR3KYC-01","authority":"MCA","title":"Director KYC (Form DIR-3 KYC) - triennial filing effective 31 Mar 2026 (previously annual)","applies_if":{"country_contains":"India"},"required_document":"DIR-3 KYC Confirmation","penalty":"DIN deactivation, which blocks the director from signing AOC-4/MGT-7, plus a reactivation fee"},
+  {"id":"MCA-DPT3-01","authority":"MCA / Registrar of Companies","title":"Annual return of deposits and exempted deposits (Form DPT-3), due by 30 June","applies_if":{"country_contains":"India"},"required_document":"DPT-3 Annual Return Filing","penalty":"Fine on the company and officers in default"},
+  {"id":"MCA-MSME1-01","authority":"MCA / Registrar of Companies","title":"Half-yearly return of outstanding MSME dues beyond 45 days (Form MSME-1)","applies_if":{"country_contains":"India"},"required_document":"MSME-1 Outstanding Dues Return","penalty":"Fine on the company and every officer in default under Section 405"}
+];
+
+const SAMPLE_ORG = {
+  org_name: "SkyLogix Robotics Pvt Ltd",
+  industry: "Drone Delivery / Logistics",
+  country: "India",
+  employees: 260,
+  exports: true,
+  documents: [
+    {type: "GST Certificate", issued: "2023-04-01", expiry: "2026-03-31"},
+    {type: "ISO 9001 Certificate", issued: "2024-01-10", expiry: "2026-01-10"},
+    {type: "Remote Pilot License", issued: "2023-11-01", expiry: "2025-11-01"},
+    {type: "Labour Registration", issued: "2022-06-15", expiry: null},
+    {type: "AOC-4 Filing Acknowledgement", issued: "2025-10-20", expiry: null},
+    {type: "DIR-3 KYC Confirmation", issued: "2023-09-15", expiry: null}
+  ]
+};
+
+function normalizeOrg(raw){
+  const org = Object.assign({documents: [], exports: false, employees: 0}, raw);
+  const today = new Date(); today.setHours(0,0,0,0);
+  org.documents = (org.documents || []).map(d => {
+    const doc = Object.assign({}, d);
+    doc.expired = false; doc.expires_soon = false; doc.days_to_expiry = null;
+    if (doc.expiry) {
+      const expiry = new Date(doc.expiry + "T00:00:00");
+      const days = Math.round((expiry - today) / 86400000);
+      doc.days_to_expiry = days;
+      doc.expired = days < 0;
+      doc.expires_soon = days >= 0 && days <= 60;
+    }
+    return doc;
+  });
+  return org;
+}
+
+function ruleMatches(org, cond){
+  if (cond.industry_contains !== undefined) {
+    if (cond.industry_contains !== "*" &&
+        !(org.industry || "").toLowerCase().includes(cond.industry_contains.toLowerCase())) return false;
+  }
+  if (cond.employees_gte !== undefined && (org.employees || 0) < cond.employees_gte) return false;
+  if (cond.exports !== undefined && Boolean(org.exports) !== cond.exports) return false;
+  if (cond.country_contains !== undefined &&
+      !(org.country || "").toLowerCase().includes(cond.country_contains.toLowerCase())) return false;
+  return true;
+}
+
+function findApplicableRegulations(org){
+  return REGULATIONS.filter(r => ruleMatches(org, r.applies_if));
+}
+
+function analyzeGaps(org, applicable){
+  const held = {};
+  org.documents.forEach(d => held[d.type] = d);
+  const gaps = applicable.map(reg => {
+    const doc = held[reg.required_document];
+    let severity, status;
+    if (!doc) { severity = "High"; status = "Missing"; }
+    else if (doc.expired) { severity = "High"; status = "Expired"; }
+    else if (doc.expires_soon) { severity = "Medium"; status = `Expires in ${doc.days_to_expiry} days`; }
+    else { severity = "Low"; status = "OK"; }
+    return {
+      regulation_id: reg.id, authority: reg.authority, title: reg.title,
+      required_document: reg.required_document, status, severity,
+      penalty_if_ignored: reg.penalty,
+    };
+  });
+  const total = gaps.length;
+  const okCount = gaps.filter(g => g.severity === "Low").length;
+  return {
+    gaps,
+    compliance_pct: total ? Math.round((okCount/total)*100) : 100,
+    high_risk_count: gaps.filter(g => g.severity === "High").length,
+    medium_risk_count: gaps.filter(g => g.severity === "Medium").length,
+  };
+}
+
+const SEVERITY_WEIGHT = {High: 40, Medium: 20, Low: 5};
+function priorityScore(gap){
+  let score = SEVERITY_WEIGHT[gap.severity];
+  if (gap.status === "Missing") score += 15;
+  if (gap.status === "Expired") score += 20;
+  if (gap.status.startsWith("Expires in")) score += 10;
+  return Math.min(score, 100);
+}
+
+function generateOkrs(gapReport){
+  const okrs = gapReport.gaps.filter(g => g.severity !== "Low").map(g => ({
+    objective: `Resolve ${g.status.toLowerCase()} status for ${g.required_document}`,
+    linked_regulation: g.regulation_id,
+    key_results: [
+      `Collect / renew: ${g.required_document}`,
+      `Verify against ${g.authority} requirement (${g.regulation_id})`,
+      "Upload signed document to central repository",
+      "Compliance officer sign-off",
+    ],
+    progress_pct: 0,
+    priority_score: priorityScore(g),
+    risk_if_ignored: g.penalty_if_ignored,
+  }));
+  okrs.sort((a,b) => b.priority_score - a.priority_score);
+  return okrs;
+}
+
+function buildReport(org, gapReport, okrs){
+  return {
+    generated_on: new Date().toISOString().slice(0,10),
+    org_name: org.org_name || "Unnamed organization",
+    industry: org.industry || "Unspecified",
+    compliance_pct: gapReport.compliance_pct,
+    high_risk_count: gapReport.high_risk_count,
+    medium_risk_count: gapReport.medium_risk_count,
+    gaps: gapReport.gaps,
+    okrs,
+  };
+}
+
+function runPipeline(rawOrg){
+  const org = normalizeOrg(rawOrg);
+  const applicable = findApplicableRegulations(org);
+  const gapReport = analyzeGaps(org, applicable);
+  const okrs = generateOkrs(gapReport);
+  return buildReport(org, gapReport, okrs);
+}
+
+let docRowCount = 0;
+
+function addDocRow(doc){
+  doc = doc || {type:"", issued:"", expiry:""};
+  const id = docRowCount++;
+  const tbody = document.getElementById('doc-rows');
+  const tr = document.createElement('tr');
+  tr.id = 'doc-row-' + id;
+  tr.innerHTML = `
+    <td><input type="text" list="doctype-list" value="${escAttr(doc.type)}" id="doc-type-${id}"></td>
+    <td><input type="date" value="${escAttr(doc.issued || '')}" id="doc-issued-${id}"></td>
+    <td><input type="date" value="${escAttr(doc.expiry || '')}" id="doc-expiry-${id}"></td>
+    <td><button class="row-remove" onclick="document.getElementById('doc-row-${id}').remove()">×</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function escAttr(s){ return String(s).replace(/"/g, '&quot;'); }
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('panel-form').classList.toggle('active', tab === 'form');
+  document.getElementById('panel-json').classList.toggle('active', tab === 'json');
+}
+
+function loadSample(){
+  fillForm(SAMPLE_ORG);
+  document.getElementById('raw-json').value = JSON.stringify(SAMPLE_ORG, null, 2);
+}
+
+function clearForm(){
+  fillForm({org_name:"", industry:"", country:"India", employees:0, exports:false, documents:[]});
+  document.getElementById('raw-json').value = "";
+  document.getElementById('error-msg').textContent = "";
+}
+
+function fillForm(org){
+  document.getElementById('f-name').value = org.org_name || "";
+  document.getElementById('f-industry').value = org.industry || "";
+  document.getElementById('f-country').value = org.country || "India";
+  document.getElementById('f-employees').value = org.employees || 0;
+  document.getElementById('f-exports').checked = Boolean(org.exports);
+  document.getElementById('doc-rows').innerHTML = "";
+  docRowCount = 0;
+  (org.documents || []).forEach(addDocRow);
+  if ((org.documents || []).length === 0) addDocRow();
+}
+
+function readFormOrg(){
+  const rows = document.querySelectorAll('#doc-rows tr');
+  const documents = [];
+  rows.forEach(tr => {
+    const idx = tr.id.replace('doc-row-', '');
+    const type = document.getElementById('doc-type-' + idx).value.trim();
+    const issued = document.getElementById('doc-issued-' + idx).value || null;
+    const expiry = document.getElementById('doc-expiry-' + idx).value || null;
+    if (type) documents.push({type, issued, expiry});
+  });
+  return {
+    org_name: document.getElementById('f-name').value.trim() || "Unnamed organization",
+    industry: document.getElementById('f-industry').value.trim() || "Unspecified",
+    country: document.getElementById('f-country').value.trim() || "India",
+    employees: parseInt(document.getElementById('f-employees').value, 10) || 0,
+    exports: document.getElementById('f-exports').checked,
+    documents,
+  };
+}
+
+function runAnalysis(){
+  const errorEl = document.getElementById('error-msg');
+  errorEl.textContent = "";
+  const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+  let org;
+  try {
+    if (activeTab === 'json') {
+      const raw = document.getElementById('raw-json').value.trim();
+      if (!raw) { errorEl.textContent = "Paste a company profile JSON first."; return; }
+      org = JSON.parse(raw);
+    } else {
+      org = readFormOrg();
+      if (!org.documents.length) { errorEl.textContent = "Add at least one document, or switch to Paste JSON."; return; }
+    }
+  } catch (e) {
+    errorEl.textContent = "Couldn't parse that JSON: " + e.message;
+    return;
+  }
+  const report = runPipeline(org);
+  renderResults(report);
+}
+
+function renderResults(report){
+  document.getElementById('org-title').textContent = report.org_name;
+  document.getElementById('org-subtitle').innerHTML = `${report.industry} &nbsp;·&nbsp; generated <span>${report.generated_on}</span>`;
+  const stamp = document.getElementById('stamp');
+  stamp.style.visibility = 'visible';
+  document.getElementById('stamp-pct').textContent = report.compliance_pct + '%';
+
+  const gaps = report.gaps, okrs = report.okrs;
+  const riskCls = report.compliance_pct >= 80 ? 'risk-ok' : report.compliance_pct >= 50 ? 'risk-med' : 'risk-high';
+  const summaryCells = [
+    {num: report.compliance_pct + '%', cap: 'Compliance score', cls: riskCls},
+    {num: report.high_risk_count, cap: 'High risk items', cls: 'risk-high'},
+    {num: report.medium_risk_count, cap: 'Medium risk items', cls: 'risk-med'},
+    {num: okrs.length, cap: 'Open objectives', cls: ''},
+  ];
+
+  const gapsHtml = gaps.length ? `
+    <table class="ledger">
+      <thead><tr><th>Regulation</th><th>Authority</th><th>Required document</th><th>Status</th><th>Severity</th><th>Penalty if ignored</th></tr></thead>
+      <tbody>
+        ${gaps.map(g => `
+          <tr>
+            <td><span class="reg-id">${g.regulation_id}</span></td>
+            <td>${g.authority}</td>
+            <td>${g.required_document}</td>
+            <td>${g.status}</td>
+            <td><span class="badge ${g.severity}">${g.severity}</span></td>
+            <td class="penalty">${g.penalty_if_ignored}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>` : `<div class="all-clear">No applicable regulations matched this company profile.</div>`;
+
+  const okrsHtml = okrs.length ? `
+    <div class="okr-grid">
+      ${okrs.map(o => `
+        <div class="okr-card ${o.priority_score >= 50 ? 'p-high' : o.priority_score >= 25 ? 'p-med' : ''}">
+          <div class="okr-top">
+            <div>
+              <div class="okr-obj">${o.objective}</div>
+              <div class="okr-reg">linked · ${o.linked_regulation}</div>
+            </div>
+            <div class="priority">Priority<span class="score">${o.priority_score}</span></div>
+          </div>
+          <ul class="kr-list">${o.key_results.map(kr => `<li>${kr}</li>`).join('')}</ul>
+          <div class="risk-note">Risk if ignored: ${o.risk_if_ignored}</div>
+        </div>`).join('')}
+    </div>` : `<div class="all-clear">Every applicable regulation is currently satisfied — no open objectives.</div>`;
+
+  document.getElementById('results').innerHTML = `
+    <div class="summary">
+      ${summaryCells.map(c => `<div class="cell"><div class="num ${c.cls}">${c.num}</div><div class="cap">${c.cap}</div></div>`).join('')}
+    </div>
+    <section>
+      <div class="section-head"><span class="idx">01</span><h2>Compliance Gap Ledger</h2><span class="sub">Gap Analysis Agent</span></div>
+      ${gapsHtml}
+    </section>
+    <section>
+      <div class="section-head"><span class="idx">02</span><h2>Objectives &amp; Key Results</h2><span class="sub">OKR Intelligence Agent · ranked by priority</span></div>
+      ${okrsHtml}
+    </section>
+  `;
+}
+
+fillForm({org_name:"", industry:"", country:"India", employees:0, exports:false, documents:[]});
+document.getElementById('raw-json').value = JSON.stringify(SAMPLE_ORG, null, 2);
+</script>
+</body>
+</html>

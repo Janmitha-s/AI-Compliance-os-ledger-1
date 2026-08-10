@@ -1,0 +1,122 @@
+[
+  {
+    "id": "DGCA-CAR-2025-4.2",
+    "authority": "DGCA",
+    "title": "Remote Pilot License for commercial drones above 5kg",
+    "applies_if": {"industry_contains": "Drone"},
+    "required_document": "Remote Pilot License",
+    "penalty": "Grounding of fleet + fine up to INR 1,00,000"
+  },
+  {
+    "id": "GST-SEC-16",
+    "authority": "GST Council",
+    "title": "GST registration and periodic filing",
+    "applies_if": {"industry_contains": "*"},
+    "required_document": "GST Certificate",
+    "penalty": "18% interest + late filing fee"
+  },
+  {
+    "id": "LABOUR-EMP-100",
+    "authority": "Labour Ministry",
+    "title": "Labour registration mandatory above 100 employees",
+    "applies_if": {"employees_gte": 100},
+    "required_document": "Labour Registration",
+    "penalty": "Suspension of operating license"
+  },
+  {
+    "id": "EXPORT-DGFT-01",
+    "authority": "DGFT",
+    "title": "Export license / IEC code for exporting entities",
+    "applies_if": {"exports": true},
+    "required_document": "Export License",
+    "penalty": "Shipment seizure at customs"
+  },
+  {
+    "id": "ISO-9001-QMS",
+    "authority": "Voluntary Standard",
+    "title": "Quality Management System certification (buyer requirement)",
+    "applies_if": {"industry_contains": "*"},
+    "required_document": "ISO 9001 Certificate",
+    "penalty": "Loss of enterprise contracts"
+  },
+  {
+    "id": "MOEF-EC-01",
+    "authority": "Pollution Control Board",
+    "title": "Environmental clearance for manufacturing units",
+    "applies_if": {"industry_contains": "Manufactur"},
+    "required_document": "Environmental Clearance Certificate",
+    "penalty": "Plant shutdown order"
+  },
+  {
+    "id": "FSSAI-LIC-01",
+    "authority": "FSSAI",
+    "title": "Food business operating license",
+    "applies_if": {"industry_contains": "Food"},
+    "required_document": "FSSAI License",
+    "penalty": "Seizure of stock + fine up to INR 5,00,000"
+  },
+  {
+    "id": "DPDP-ACT-01",
+    "authority": "MeitY",
+    "title": "Data protection compliance for entities handling personal data",
+    "applies_if": {"industry_contains": "IT"},
+    "required_document": "Data Protection Policy",
+    "penalty": "Fine up to INR 250 crore under DPDP Act"
+  },
+  {
+    "id": "CDSCO-MED-01",
+    "authority": "CDSCO",
+    "title": "Manufacturing license for medical devices",
+    "applies_if": {"industry_contains": "Health"},
+    "required_document": "CDSCO Medical Device License",
+    "penalty": "Product recall + license cancellation"
+  },
+  {
+    "id": "MCA-AOC4-01",
+    "authority": "MCA / Registrar of Companies",
+    "title": "Annual financial statement filing (Form AOC-4) within 30 days of AGM",
+    "applies_if": {"country_contains": "India"},
+    "required_document": "AOC-4 Filing Acknowledgement",
+    "penalty": "Rs. 100/day per form with no cap; delays cascade into MGT-7"
+  },
+  {
+    "id": "MCA-MGT7-01",
+    "authority": "MCA / Registrar of Companies",
+    "title": "Annual return filing (Form MGT-7 / MGT-7A) within 60 days of AGM",
+    "applies_if": {"country_contains": "India"},
+    "required_document": "MGT-7 Annual Return Filing",
+    "penalty": "Rs. 100/day per form; 3 consecutive years of non-filing triggers automatic 5-year director disqualification under Section 164(2)"
+  },
+  {
+    "id": "MCA-ADT1-01",
+    "authority": "MCA / Registrar of Companies",
+    "title": "Statutory auditor appointment (Form ADT-1) within 15 days of AGM",
+    "applies_if": {"country_contains": "India"},
+    "required_document": "ADT-1 Auditor Appointment Filing",
+    "penalty": "AOC-4 cannot be filed without a valid auditor appointment on record"
+  },
+  {
+    "id": "MCA-DIR3KYC-01",
+    "authority": "MCA",
+    "title": "Director KYC (Form DIR-3 KYC) - triennial filing effective 31 Mar 2026 (previously annual)",
+    "applies_if": {"country_contains": "India"},
+    "required_document": "DIR-3 KYC Confirmation",
+    "penalty": "DIN deactivation, which blocks the director from signing AOC-4/MGT-7, plus a reactivation fee"
+  },
+  {
+    "id": "MCA-DPT3-01",
+    "authority": "MCA / Registrar of Companies",
+    "title": "Annual return of deposits and exempted deposits (Form DPT-3), due by 30 June",
+    "applies_if": {"country_contains": "India"},
+    "required_document": "DPT-3 Annual Return Filing",
+    "penalty": "Fine on the company and officers in default"
+  },
+  {
+    "id": "MCA-MSME1-01",
+    "authority": "MCA / Registrar of Companies",
+    "title": "Half-yearly return of outstanding MSME dues beyond 45 days (Form MSME-1)",
+    "applies_if": {"country_contains": "India"},
+    "required_document": "MSME-1 Outstanding Dues Return",
+    "penalty": "Fine on the company and every officer in default under Section 405"
+  }
+]
