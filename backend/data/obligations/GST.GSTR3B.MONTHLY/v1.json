@@ -1,0 +1,29 @@
+{
+  "obligation_id": "GST.GSTR3B.MONTHLY",
+  "version": 1,
+  "effective_from": "2017-07-01",
+  "title": "Monthly summary return of outward/inward supplies and tax payment (GSTR-3B)",
+  "authority": "CBIC / GSTN",
+  "act": "Central Goods and Services Tax Act, 2017",
+  "section": "39(1)",
+  "rules": ["CGST Rules, 2017, Rule 61"],
+  "source_url": "https://www.gst.gov.in",
+  "subject": "ENTITY",
+  "depends_on": [],
+  "applicability": [
+    {"field": "gst_registered", "op": "eq", "value": true},
+    {"field": "gst_return_frequency", "op": "eq", "value": "MONTHLY"}
+  ],
+  "periodicity": {
+    "type": "MONTHLY",
+    "anchor": "MONTH_END",
+    "offset_days": 20,
+    "note": "Due 20th of the following month for most taxpayers; staggered dates apply by turnover/state group under Notification 82/2020 — this record does not yet encode the stagger, hence DRAFT."
+  },
+  "evidence_kinds": ["GSTR-3B ARN acknowledgement"],
+  "penalty": "Late fee under s.47; interest under s.50 on unpaid tax.",
+  "severity_base": 70,
+  "confidence": "DRAFT",
+  "reviewed_by": null,
+  "reviewed_on": null
+}

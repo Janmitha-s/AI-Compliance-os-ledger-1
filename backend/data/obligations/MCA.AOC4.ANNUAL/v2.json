@@ -1,0 +1,32 @@
+{
+  "obligation_id": "MCA.AOC4.ANNUAL",
+  "version": 2,
+  "effective_from": "2027-01-01",
+  "title": "Filing of financial statements with the Registrar (Form AOC-4)",
+  "authority": "MCA / Registrar of Companies",
+  "act": "Companies Act, 2013",
+  "section": "137(1)",
+  "rules": ["Companies (Accounts) Rules, 2014, Rule 12"],
+  "source_url": "https://www.indiacode.nic.in/handle/123456789/2114",
+  "subject": "ENTITY",
+  "depends_on": ["MCA.ADT1.ANNUAL"],
+  "applicability": [
+    {"field": "entity_type", "op": "in", "value": ["PRIVATE_LIMITED", "PUBLIC_LIMITED", "OPC"]},
+    {"field": "country", "op": "contains", "value": "India"},
+    {"field": "status", "op": "eq", "value": "ACTIVE"}
+  ],
+  "periodicity": {
+    "type": "ANNUAL",
+    "anchor": "AGM_DATE",
+    "offset_days": 30,
+    "fallback_anchor": "FY_END",
+    "fallback_offset_days": 180,
+    "note": "ILLUSTRATIVE v2 for this demo: additional-fee schedule revised. Replace with the real amendment text and citation when one actually issues."
+  },
+  "evidence_kinds": ["SRN acknowledgement", "AOC-4 challan", "Filed Form AOC-4"],
+  "penalty": "Additional fee under s.403, revised slab (illustrative). Company and officers liable under s.137(3).",
+  "severity_base": 85,
+  "confidence": "DRAFT",
+  "reviewed_by": null,
+  "reviewed_on": null
+}
