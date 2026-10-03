@@ -1,0 +1,27 @@
+{
+  "obligation_id": "MCA.MSME1.HALFYEARLY",
+  "version": 1,
+  "effective_from": "2019-01-22",
+  "title": "Half-yearly return of outstanding payments to micro and small enterprise suppliers (Form MSME-1)",
+  "authority": "MCA / Registrar of Companies",
+  "act": "Companies Act, 2013",
+  "section": "405",
+  "rules": ["Specified Companies (Furnishing of information about payment to micro and small enterprise suppliers) Order, 2019"],
+  "source_url": "https://www.indiacode.nic.in/handle/123456789/2114",
+  "subject": "ENTITY",
+  "depends_on": [],
+  "applicability": [
+    {"field": "entity_type", "op": "in", "value": ["PRIVATE_LIMITED", "PUBLIC_LIMITED", "OPC"]},
+    {"field": "has_msme_supplier_dues", "op": "eq", "value": true}
+  ],
+  "periodicity": {
+    "type": "HALF_YEARLY",
+    "anchor": "MONTH_END",
+    "offset_days": 31,
+    "note": "KNOWN MODELLING GAP, left in deliberately: the real rule is 'due one calendar month after each half-year end' — 31 Oct for the Apr-Sep half, 30 Apr for the Oct-Mar half. A single offset_days value can't express both exactly (31 days after 30 Sep = 31 Oct, correct; 31 days after 31 Mar = 1 May, one day past the real 30 Apr deadline). Periodicity currently has no 'add one calendar month' anchor mode. Fix before shipping: either add that anchor mode, or split this into two ONE_TIME-per-half obligation records with FIXED_DATE anchors like DPT-3's. Flagged DRAFT for this reason, independent of the citation accuracy."
+  },
+  "evidence_kinds": ["MSME-1 SRN acknowledgement"],
+  "penalty": "Fine on the company and every officer in default under s.405(4).",
+  "severity_base": 45,
+  "confidence": "DRAFT"
+}

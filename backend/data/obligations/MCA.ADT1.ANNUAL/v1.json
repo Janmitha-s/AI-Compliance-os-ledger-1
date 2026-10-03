@@ -1,0 +1,30 @@
+{
+  "obligation_id": "MCA.ADT1.ANNUAL",
+  "version": 1,
+  "effective_from": "2014-04-01",
+  "title": "Notice of appointment of auditor (Form ADT-1)",
+  "authority": "MCA / Registrar of Companies",
+  "act": "Companies Act, 2013",
+  "section": "139(1)",
+  "rules": ["Companies (Audit and Auditors) Rules, 2014, Rule 4"],
+  "source_url": "https://www.indiacode.nic.in/handle/123456789/2114",
+  "subject": "ENTITY",
+  "depends_on": [],
+  "applicability": [
+    {"field": "entity_type", "op": "in", "value": ["PRIVATE_LIMITED", "PUBLIC_LIMITED", "OPC"]},
+    {"field": "country", "op": "contains", "value": "India"},
+    {"field": "status", "op": "eq", "value": "ACTIVE"}
+  ],
+  "periodicity": {
+    "type": "ANNUAL",
+    "anchor": "AGM_DATE",
+    "offset_days": 15,
+    "fallback_anchor": "FY_END",
+    "fallback_offset_days": 180,
+    "note": "15 days from AGM at which the auditor is appointed/ratified. Same deemed-AGM fallback logic as AOC-4."
+  },
+  "evidence_kinds": ["ADT-1 SRN acknowledgement"],
+  "penalty": "Additional fee under s.403 for late filing.",
+  "severity_base": 55,
+  "confidence": "DRAFT"
+}

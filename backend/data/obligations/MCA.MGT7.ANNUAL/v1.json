@@ -1,0 +1,32 @@
+{
+  "obligation_id": "MCA.MGT7.ANNUAL",
+  "version": 1,
+  "effective_from": "2014-04-01",
+  "title": "Filing of Annual Return (Form MGT-7 / MGT-7A)",
+  "authority": "MCA / Registrar of Companies",
+  "act": "Companies Act, 2013",
+  "section": "92(4)",
+  "rules": ["Companies (Management and Administration) Rules, 2014, Rule 11"],
+  "source_url": "https://www.indiacode.nic.in/handle/123456789/2114",
+  "subject": "ENTITY",
+  "depends_on": [],
+  "applicability": [
+    {"field": "entity_type", "op": "in", "value": ["PRIVATE_LIMITED", "PUBLIC_LIMITED", "OPC"]},
+    {"field": "country", "op": "contains", "value": "India"},
+    {"field": "status", "op": "eq", "value": "ACTIVE"}
+  ],
+  "periodicity": {
+    "type": "ANNUAL",
+    "anchor": "AGM_DATE",
+    "offset_days": 60,
+    "fallback_anchor": "FY_END",
+    "fallback_offset_days": 180,
+    "note": "60 days from AGM. Same deemed-AGM fallback as AOC-4 — this obligation and AOC-4 share the same anchor event but different offsets, which is exactly why offset_days lives on Periodicity rather than being hardcoded."
+  },
+  "evidence_kinds": ["MGT-7 SRN acknowledgement"],
+  "penalty": "Additional fee under s.403; company and officers liable under s.92(5).",
+  "severity_base": 80,
+  "confidence": "HUMAN_VERIFIED",
+  "reviewed_by": "demo-cs@example.com",
+  "reviewed_on": "2026-09-16"
+}

@@ -3,11 +3,8 @@ The two models that replace the old "document with an expiry date" idea.
 
 Obligation          = the rule as it exists in law. Nothing to do with any
                       particular company. One row per statutory duty.
-ObligationInstance  = that rule as it falls due for ONE company in ONE period.
-                      "AOC-4 for FY2025-26, due 30 Oct 2026, not yet filed."
-
-The old model could not express the second thing at all, which is why a
-company that filed AOC-4 once showed as compliant forever.
+ObligationInstance  = that rule as it falls due for ONE company (or one
+                      person at that company) in ONE period.
 """
 from __future__ import annotations
 
@@ -18,28 +15,12 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field
 
 
-# ---------------------------------------------------------------- predicates
-
 class Predicate(BaseModel):
-    """One machine-evaluable condition on a company profile.
-
-    Example: {"field": "entity_type", "op": "in", "value": ["PRIVATE_LIMITED"]}
-
-    This replaces the hard-coded `if "industry_contains" in rule` checks in the
-    old compliance_agent.py. Applicability becomes DATA, not control flow, so a
-    new regulation is a new JSON file rather than a new branch in Python.
-    """
     field: str
     op: Literal["eq", "ne", "in", "not_in", "gte", "lte", "exists", "contains"]
     value: Any = None
 
     def evaluate(self, profile: dict) -> Optional[bool]:
-        """Returns True / False, or None meaning 'cannot determine'.
-
-        None is the important one. If the company profile is missing the field
-        this predicate needs, we must NOT silently treat the obligation as
-        not-applicable. Under-reporting an obligation is how clients get fined.
-        """
         if self.field not in profile or profile[self.field] is None:
             return None if self.op != "exists" else False
 
@@ -56,61 +37,51 @@ class Predicate(BaseModel):
         return None
 
 
-# --------------------------------------------------------------- periodicity
-
 class Anchor(str, Enum):
-    """The date a due date is counted FROM.
-
-    This is the field the old schema was missing entirely. A licence expires on
-    a fixed date; a statutory filing is due N days after an event. Those are
-    different shapes and the old code only had the first one.
-    """
-    AGM_DATE = "AGM_DATE"      # AOC-4, MGT-7, ADT-1
-    FY_END = "FY_END"          # DPT-3 style
-    MONTH_END = "MONTH_END"    # TDS, PF, ESI
-    FIXED_DATE = "FIXED_DATE"  # a hard calendar date each year
+    AGM_DATE = "AGM_DATE"
+    FY_END = "FY_END"
+    MONTH_END = "MONTH_END"
+    FIXED_DATE = "FIXED_DATE"
 
 
 class Periodicity(BaseModel):
     type: Literal["ANNUAL", "HALF_YEARLY", "QUARTERLY", "MONTHLY", "TRIENNIAL", "ONE_TIME"]
     anchor: Anchor
     offset_days: int = 0
-    # Used when the anchor event did not happen. The Companies Act says an AGM
-    # must be held within 6 months of FY end; if it wasn't, the clock still runs
-    # from the date it OUGHT to have been held. That is this fallback.
     fallback_anchor: Optional[Anchor] = None
     fallback_offset_days: Optional[int] = None
+    anchor_month: Optional[int] = None
+    anchor_day: Optional[int] = None
     note: str = ""
 
 
-# ------------------------------------------------------------- the obligation
-
 class Obligation(BaseModel):
-    obligation_id: str                 # "MCA.AOC4.ANNUAL"
-    version: int = 1                   # never edit in place; append a version
+    obligation_id: str
+    version: int = 1
     effective_from: date
     effective_to: Optional[date] = None
 
     title: str
     authority: str
     act: str
-    section: str                       # the actual citation, e.g. "137(1)"
+    section: str
     rules: list[str] = Field(default_factory=list)
     source_url: Optional[str] = None
 
-    applicability: list[Predicate]     # ALL must be true
+    subject: Literal["ENTITY", "DIRECTOR"] = "ENTITY"
+    depends_on: list[str] = Field(default_factory=list)
+
+    applicability: list[Predicate]
     periodicity: Periodicity
 
     evidence_kinds: list[str] = Field(default_factory=list)
     penalty: str = ""
-    severity_base: int = 50            # 0-100
+    severity_base: int = 50
 
     confidence: Literal["DRAFT", "HUMAN_VERIFIED"] = "DRAFT"
     reviewed_by: Optional[str] = None
     reviewed_on: Optional[date] = None
 
-
-# ------------------------------------------------------------- the instance
 
 class InstanceStatus(str, Enum):
     NOT_STARTED = "NOT_STARTED"
@@ -119,24 +90,26 @@ class InstanceStatus(str, Enum):
     VERIFIED = "VERIFIED"
     LATE = "LATE"
     NOT_APPLICABLE = "NOT_APPLICABLE"
+    BLOCKED = "BLOCKED"
 
 
 class ObligationInstance(BaseModel):
-    """One concrete thing that is due, for one company, for one period."""
     entity_id: str
     obligation_id: str
     obligation_version: int
+    subject_id: str = ""
 
-    period_label: str                  # "FY2025-26"
+    period_label: str
     period_start: date
     period_end: date
 
     due_date: date
-    due_date_basis: str                # human-readable derivation, always shown
+    due_date_basis: str
 
     status: InstanceStatus = InstanceStatus.NOT_STARTED
     filed_on: Optional[date] = None
     evidence_ref: Optional[str] = None
+    blocked_reason: Optional[str] = None
 
     def days_to_due(self, today: date) -> int:
         return (self.due_date - today).days

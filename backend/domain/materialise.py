@@ -51,13 +51,11 @@ def _financial_years(start: date, horizon_end: date, fy_end_month: int = 3, fy_e
     already closed (you cannot file for a year that hasn't ended) and walk
     forward until the horizon.
     """
-    # first FY end on or before `start`
     y = start.year
     fy_end = date(y, fy_end_month, fy_end_day)
     if fy_end > start:
         fy_end = date(y - 1, fy_end_month, fy_end_day)
 
-    # go back one extra year so the most recently closed FY is included
     fy_end = date(fy_end.year - 1, fy_end_month, fy_end_day)
 
     while fy_end <= horizon_end:
@@ -65,6 +63,56 @@ def _financial_years(start: date, horizon_end: date, fy_end_month: int = 3, fy_e
         label = f"FY{period_start.year}-{str(fy_end.year)[2:]}"
         yield label, period_start, fy_end
         fy_end = date(fy_end.year + 1, fy_end_month, fy_end_day)
+
+
+def _half_years(start: date, horizon_end: date, fy_end_month: int = 3, fy_end_day: int = 31):
+    """Yields (label, period_start, period_end) for each HALF of each
+    financial year: H1 = Apr-Sep, H2 = Oct-Mar. Used by MSME-1, which is
+    filed twice a year, not once.
+    """
+    for fy_label, fy_start, fy_end in _financial_years(start, horizon_end, fy_end_month, fy_end_day):
+        h1_end = _add_months(fy_start, 6) - timedelta(days=1)      # 30 Sep
+        h1_label = f"{fy_label}-H1"
+        yield h1_label, fy_start, h1_end
+
+        h2_start = h1_end + timedelta(days=1)                      # 1 Oct
+        h2_label = f"{fy_label}-H2"
+        yield h2_label, h2_start, fy_end
+
+
+def _quarters(start: date, horizon_end: date, fy_end_month: int = 3, fy_end_day: int = 31):
+    """Yields (label, period_start, period_end) for each quarter of each FY."""
+    for fy_label, fy_start, fy_end in _financial_years(start, horizon_end, fy_end_month, fy_end_day):
+        q_start = fy_start
+        for q_num in range(1, 5):
+            q_end = _add_months(q_start, 3) - timedelta(days=1)
+            yield f"{fy_label}-Q{q_num}", q_start, min(q_end, fy_end)
+            q_start = q_end + timedelta(days=1)
+
+
+def _periods_for(
+    period_type: str, start: date, horizon_end: date,
+    fy_end_month: int = 3, fy_end_day: int = 31,
+):
+    """Single dispatcher for every cadence a `Periodicity.type` can be.
+    Adding a new cadence later means adding one branch here, not touching
+    `materialise()` at all — that's the point of factoring it out.
+    """
+    if period_type in ("ANNUAL", "TRIENNIAL"):
+        yield from _financial_years(start, horizon_end, fy_end_month, fy_end_day)
+    elif period_type == "HALF_YEARLY":
+        yield from _half_years(start, horizon_end, fy_end_month, fy_end_day)
+    elif period_type == "QUARTERLY":
+        yield from _quarters(start, horizon_end, fy_end_month, fy_end_day)
+    elif period_type == "MONTHLY":
+        y, m = start.year, start.month
+        cursor = date(y, m, 1)
+        while cursor <= horizon_end:
+            month_end = _add_months(cursor, 1) - timedelta(days=1)
+            yield f"{cursor:%Y-%m}", cursor, month_end
+            cursor = month_end + timedelta(days=1)
+    else:
+        raise ValueError(f"no period generator for periodicity type {period_type!r}")
 
 
 def _resolve_due_date(
@@ -88,7 +136,6 @@ def _resolve_due_date(
                 f"AGM held {agm:%d %b %Y} + {p.offset_days} days "
                 f"({obligation.act} s.{obligation.section})"
             )
-        # AGM not recorded -> use the date it ought to have been held
         months = (p.fallback_offset_days or 180) // 30
         deemed = _add_months(period_end, months)
         due = deemed + timedelta(days=p.offset_days)
@@ -96,6 +143,17 @@ def _resolve_due_date(
             f"No AGM date on record. Deemed AGM {deemed:%d %b %Y} "
             f"(FY end {period_end:%d %b %Y} + {months} months) "
             f"+ {p.offset_days} days ({obligation.act} s.{obligation.section})"
+        )
+
+    if p.anchor == Anchor.FIXED_DATE:
+        if p.anchor_month is None or p.anchor_day is None:
+            raise ValueError(f"{obligation.obligation_id}: FIXED_DATE anchor needs anchor_month/anchor_day")
+        candidate = date(period_end.year, p.anchor_month, p.anchor_day)
+        if candidate < period_end:
+            candidate = date(period_end.year + 1, p.anchor_month, p.anchor_day)
+        return candidate, (
+            f"Fixed date {p.anchor_month:02d}-{p.anchor_day:02d} following "
+            f"period end {period_end:%d %b %Y} ({obligation.act} s.{obligation.section})"
         )
 
     if p.anchor == Anchor.FY_END:
@@ -135,49 +193,99 @@ def materialise(
     agm_dates: Optional[dict[str, date]] = None,
     evidence_periods: Optional[set[str]] = None,
 ) -> list[ObligationInstance]:
-    """Generate every instance of `obligation` for this company in the horizon.
+    """Generate every instance of `obligation` for this company (or, for a
+    DIRECTOR-subject obligation, for each of its directors) in the horizon.
 
     evidence_periods = the set of period labels the company has already proved,
     e.g. {"FY2024-25"}. Note this is keyed by PERIOD, which is the whole point:
     proof for FY2024-25 says nothing about FY2025-26.
+
+    For a DIRECTOR-subject obligation, evidence_periods is instead expected
+    to be keyed "{DIN}:{period_label}" so one director's filed KYC doesn't
+    silently mark another director's as done too.
     """
     agm_dates = agm_dates or {}
     evidence_periods = evidence_periods or set()
-
-    verdict, _ = is_applicable(obligation, profile)
-    if verdict is False:
-        return []
-
     horizon_end = _add_months(today, horizon_months)
-    instances: list[ObligationInstance] = []
 
-    for label, p_start, p_end in _financial_years(today, horizon_end):
-        if obligation.periodicity.type != "ANNUAL":
-            continue  # other cadences come later; keep step one small
+    def build_for(subject_profile: dict, entity_id: str, subject_id: str) -> list[ObligationInstance]:
+        verdict, _ = is_applicable(obligation, subject_profile)
+        if verdict is False:
+            return []
 
-        due, basis = _resolve_due_date(obligation, p_end, agm_dates, label)
-        if due > horizon_end:
-            continue
+        out: list[ObligationInstance] = []
+        for label, p_start, p_end in _periods_for(
+            obligation.periodicity.type, today, horizon_end,
+        ):
+            due, basis = _resolve_due_date(obligation, p_end, agm_dates, label)
+            if due > horizon_end:
+                continue
 
-        if label in evidence_periods:
-            status = InstanceStatus.FILED
-        elif due < today:
-            status = InstanceStatus.LATE
-        else:
-            status = InstanceStatus.NOT_STARTED
+            evidence_key = f"{subject_id}:{label}" if obligation.subject == "DIRECTOR" else label
+            if evidence_key in evidence_periods or label in evidence_periods:
+                status = InstanceStatus.FILED
+            elif due < today:
+                status = InstanceStatus.LATE
+            else:
+                status = InstanceStatus.NOT_STARTED
 
-        instances.append(
-            ObligationInstance(
-                entity_id=profile.get("entity_id", profile.get("org_name", "unknown")),
-                obligation_id=obligation.obligation_id,
-                obligation_version=obligation.version,
-                period_label=label,
-                period_start=p_start,
-                period_end=p_end,
-                due_date=due,
-                due_date_basis=basis,
-                status=status,
+            out.append(
+                ObligationInstance(
+                    entity_id=entity_id,
+                    obligation_id=obligation.obligation_id,
+                    obligation_version=obligation.version,
+                    subject_id=subject_id,
+                    period_label=label,
+                    period_start=p_start,
+                    period_end=p_end,
+                    due_date=due,
+                    due_date_basis=basis,
+                    status=status,
+                )
             )
-        )
+        return out
 
+    entity_id = profile.get("entity_id", profile.get("org_name", "unknown"))
+
+    if obligation.subject == "ENTITY":
+        return build_for(profile, entity_id, entity_id)
+
+    instances: list[ObligationInstance] = []
+    for director in profile.get("directors", []):
+        merged = {**profile, **director}
+        din = director.get("din", "UNKNOWN_DIN")
+        instances.extend(build_for(merged, entity_id, din))
     return instances
+
+
+def apply_dependencies(
+    instances_by_obligation: dict[str, list[ObligationInstance]],
+    obligations_by_id: dict[str, Obligation],
+) -> None:
+    """Second pass, run AFTER every obligation has been materialised
+    independently. Marks a NOT_STARTED instance BLOCKED when an obligation
+    it depends_on has not been FILED/VERIFIED for the same period.
+
+    This does not touch due_date — the statute doesn't move AOC-4's deadline
+    just because ADT-1 is late — it only changes what a human is told to do
+    next: "prepare this" vs. "this is blocked on ADT-1 first".
+    """
+    for obligation_id, instances in instances_by_obligation.items():
+        ob = obligations_by_id.get(obligation_id)
+        if not ob or not ob.depends_on:
+            continue
+        for inst in instances:
+            if inst.status not in (InstanceStatus.NOT_STARTED, InstanceStatus.LATE):
+                continue
+            for dep_id in ob.depends_on:
+                dep_instances = instances_by_obligation.get(dep_id, [])
+                same_period = [d for d in dep_instances if d.period_label == inst.period_label]
+                dep_done = any(d.status in (InstanceStatus.FILED, InstanceStatus.VERIFIED) for d in same_period)
+                if not dep_done:
+                    inst.status = InstanceStatus.BLOCKED
+                    inst.blocked_reason = (
+                        f"{dep_id} not yet filed for {inst.period_label}"
+                        if same_period else
+                        f"{dep_id} has no instance for {inst.period_label} at all"
+                    )
+                    break

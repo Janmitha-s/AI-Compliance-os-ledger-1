@@ -11,36 +11,7 @@ zero API keys. Each file is written so a specific piece (an LLM call, a
 real crawler, a vector DB query) can be dropped in later without touching
 the others — see "Where to plug in real AI" below.
 
-## Structure
-
-```
-compliance-os/
-├── backend/
-│   ├── agents/
-│   │   ├── document_agent.py       # 1. ingest + normalize org documents
-│   │   ├── regulation_agent.py     # 2. load/monitor regulation KB
-│   │   ├── compliance_agent.py     # 3. match org profile → applicable regs
-│   │   ├── gap_analysis_agent.py   # 4. required vs held docs → risk score
-│   │   ├── okr_agent.py            # 5. gaps → objectives + key results
-│   │   └── report_agent.py         # 6. assemble final structured report
-│   ├── data/
-│   │   ├── sample_org.json         # demo organization profile
-│   │   └── sample_regulations.json # demo regulation knowledge base
-│   ├── run_pipeline.py             # wires all agents together, runs once
-│   ├── main.py                     # FastAPI wrapper exposing GET /report
-│   └── requirements.txt
-└── frontend/
-    └── dashboard.html              # standalone dashboard (embedded demo data)
-```
-
-## Run it
-
-**Dashboard only, no backend, no install:** just open `frontend/dashboard.html`
-in a browser. It has the full agent pipeline ported to JavaScript, so you
-can enter a company's details right there:
-- **Guided form** — org name, industry, employee count, exports, and a
-  documents table (add/remove rows, each with a type, issue date, expiry).
-- **Paste JSON** — paste a company profile in whatever shape you already
+## Structure3already
   have it (any object with `org_name`, `industry`, `employees`, `exports`,
   `documents[]`; extra fields are ignored).
 

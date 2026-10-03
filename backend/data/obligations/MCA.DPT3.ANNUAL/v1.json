@@ -1,0 +1,30 @@
+{
+  "obligation_id": "MCA.DPT3.ANNUAL",
+  "version": 1,
+  "effective_from": "2014-04-01",
+  "title": "Return of deposits / outstanding receipt of money not deposits (Form DPT-3)",
+  "authority": "MCA / Registrar of Companies",
+  "act": "Companies Act, 2013",
+  "section": "73",
+  "rules": ["Companies (Acceptance of Deposits) Rules, 2014, Rule 16"],
+  "source_url": "https://www.indiacode.nic.in/handle/123456789/2114",
+  "subject": "ENTITY",
+  "depends_on": [],
+  "applicability": [
+    {"field": "entity_type", "op": "in", "value": ["PRIVATE_LIMITED", "PUBLIC_LIMITED", "OPC"]},
+    {"field": "country", "op": "contains", "value": "India"},
+    {"field": "status", "op": "eq", "value": "ACTIVE"}
+  ],
+  "periodicity": {
+    "type": "ANNUAL",
+    "anchor": "FIXED_DATE",
+    "anchor_month": 6,
+    "anchor_day": 30,
+    "offset_days": 0,
+    "note": "Due 30 June every year for the position as at 31 March, REGARDLESS of when (or whether) the AGM happens. This is the deliberate contrast case with AOC-4/MGT-7: same company, same FY, but this due date does not move if the AGM is delayed."
+  },
+  "evidence_kinds": ["DPT-3 SRN acknowledgement"],
+  "penalty": "Additional fee under s.403; further penalty under s.73/76A for non-compliance with deposit provisions.",
+  "severity_base": 50,
+  "confidence": "DRAFT"
+}

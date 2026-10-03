@@ -1,0 +1,28 @@
+{
+  "obligation_id": "MCA.DIR3KYC.ANNUAL",
+  "version": 1,
+  "effective_from": "2019-04-01",
+  "title": "KYC of Directors holding a DIN (Form DIR-3 KYC / DIR-3 KYC-WEB)",
+  "authority": "MCA / Registrar of Companies",
+  "act": "Companies Act, 2013",
+  "section": "153, 157",
+  "rules": ["Companies (Appointment and Qualification of Directors) Rules, 2014, Rule 12A"],
+  "source_url": "https://www.mca.gov.in",
+  "subject": "DIRECTOR",
+  "depends_on": [],
+  "applicability": [
+    {"field": "has_active_din", "op": "eq", "value": true}
+  ],
+  "periodicity": {
+    "type": "ANNUAL",
+    "anchor": "FIXED_DATE",
+    "anchor_month": 9,
+    "anchor_day": 30,
+    "offset_days": 0,
+    "note": "CORRECTION from an earlier draft of this obligation: DIR-3 KYC is filed EVERY YEAR by every DIN holder, due 30 September following the financial year — it is not triennial. An earlier version of this file called it MCA.DIR3KYC.TRIENNIAL, which was wrong, and has been replaced by this one. Still DRAFT: confirm current MCA circular treatment (eForm vs web-form eligibility) with a CS before shipping."
+  },
+  "evidence_kinds": ["DIR-3 KYC / KYC-WEB acknowledgement"],
+  "penalty": "DIN marked 'Deactivated'; Rs.5,000 fee to reactivate.",
+  "severity_base": 60,
+  "confidence": "DRAFT"
+}

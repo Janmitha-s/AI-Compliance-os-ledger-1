@@ -156,13 +156,13 @@
 
   <header>
     <div>
-      <div class="eyebrow">AI Compliance OS · Live Ledger</div>
+      <div class="eyebrow">AI Compliance OS · Live Agent</div>
       <h1 id="org-title">Submit company details</h1>
-      <div class="org-meta" id="org-subtitle">Fill in the intake form below to generate a compliance report.</div>
+      <div class="org-meta" id="org-subtitle">Fill in the intake form below, or paste a full profile as JSON, then run the assessment against the live backend agent.</div>
     </div>
     <div class="stamp" id="stamp" style="visibility:hidden;">
       <div class="pct" id="stamp-pct">—</div>
-      <div class="label">Compliant</div>
+      <div class="label">Critic</div>
     </div>
   </header>
 
@@ -170,7 +170,7 @@
     <div class="intake-head">
       <div>
         <h2>Company intake</h2>
-        <div class="sub">Enter details directly, or paste a JSON profile in any shape you have it</div>
+        <div class="sub">The guided form covers basic fields; paste JSON for the full profile shape (directors, MSME dues, etc.) the agent actually reasons over</div>
       </div>
       <div class="tabs">
         <button class="tab-btn active" data-tab="form" onclick="switchTab('form')">Guided form</button>
@@ -189,63 +189,34 @@
         </div>
         <div class="field-row">
           <div class="field">
-            <label for="f-industry">Industry</label>
-            <input type="text" id="f-industry" list="industry-list" placeholder="e.g. Manufacturing">
-            <datalist id="industry-list">
-              <option value="Drone Delivery / Logistics">
-              <option value="Manufacturing">
-              <option value="Food Processing">
-              <option value="IT / Software Services">
-              <option value="Healthcare / Medical Devices">
-              <option value="Retail">
-            </datalist>
-          </div>
-          <div class="field">
             <label for="f-country">Country</label>
             <input type="text" id="f-country" value="India">
           </div>
           <div class="field">
-            <label for="f-employees">Employees</label>
-            <input type="number" id="f-employees" value="50" min="0">
+            <label for="f-entity-type">Entity type</label>
+            <select id="f-entity-type">
+              <option value="PRIVATE_LIMITED">Private Limited</option>
+              <option value="PUBLIC_LIMITED">Public Limited</option>
+              <option value="OPC">One Person Company</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-status">Status</label>
+            <select id="f-status">
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
           </div>
         </div>
         <div class="field-row">
           <div class="field">
             <div class="checkline">
-              <input type="checkbox" id="f-exports">
-              <label for="f-exports">Company exports goods / services</label>
+              <input type="checkbox" id="f-msme">
+              <label for="f-msme">Has outstanding MSME supplier dues</label>
             </div>
           </div>
         </div>
-
-        <div class="field full">
-          <label>Documents on file</label>
-          <table class="doc-table" id="doc-table">
-            <thead>
-              <tr><th style="width:34%">Document type</th><th style="width:22%">Issued</th><th style="width:22%">Expiry</th><th style="width:10%"></th></tr>
-            </thead>
-            <tbody id="doc-rows"></tbody>
-          </table>
-          <button class="btn btn-add btn-ghost" onclick="addDocRow()">+ Add document</button>
-        </div>
-
-        <datalist id="doctype-list">
-          <option value="GST Certificate">
-          <option value="ISO 9001 Certificate">
-          <option value="Remote Pilot License">
-          <option value="Labour Registration">
-          <option value="Export License">
-          <option value="Environmental Clearance Certificate">
-          <option value="FSSAI License">
-          <option value="Data Protection Policy">
-          <option value="CDSCO Medical Device License">
-          <option value="AOC-4 Filing Acknowledgement">
-          <option value="MGT-7 Annual Return Filing">
-          <option value="ADT-1 Auditor Appointment Filing">
-          <option value="DIR-3 KYC Confirmation">
-          <option value="DPT-3 Annual Return Filing">
-          <option value="MSME-1 Outstanding Dues Return">
-        </datalist>
+        <div class="hint">The guided form only covers company-level fields. Director-level obligations (DIR-3 KYC) and evidence periods need the JSON tab — see the sample for the full shape.</div>
       </div>
 
       <div class="panel" id="panel-json">
@@ -253,7 +224,12 @@
           <label for="raw-json">Company profile JSON</label>
           <textarea id="raw-json" spellcheck="false"></textarea>
         </div>
-        <div class="hint">Any object with org_name, industry, employees, exports, and a documents[] array (type / issued / expiry) will work — extra fields are ignored.</div>
+        <div class="hint">Any object matching the entity_profile shape the backend register evaluates — see data/sample_org.json in the repo. Extra fields are ignored; missing fields the agent needs are reported as "cannot determine", not silently skipped.</div>
+      </div>
+
+      <div class="field full" style="margin-top:16px;">
+        <label for="f-goal">Goal</label>
+        <input type="text" id="f-goal" placeholder="e.g. Assess compliance posture for SkyLogix">
       </div>
 
       <div class="intake-footer">
@@ -272,172 +248,52 @@
   <div id="results"></div>
 
   <footer>
-    <span>Document → Regulation → Compliance → Gap → OKR → Report</span>
-    <span>ai-compliance-os · demo build</span>
+    <span>Plan → Execute → Human Gate → Critic → Report</span>
+    <span>ai-compliance-os · live agent build</span>
   </footer>
 </div>
 
 <script>
-const REGULATIONS = [
-  {"id":"DGCA-CAR-2025-4.2","authority":"DGCA","title":"Remote Pilot License for commercial drones above 5kg","applies_if":{"industry_contains":"Drone"},"required_document":"Remote Pilot License","penalty":"Grounding of fleet + fine up to INR 1,00,000"},
-  {"id":"GST-SEC-16","authority":"GST Council","title":"GST registration and periodic filing","applies_if":{"industry_contains":"*"},"required_document":"GST Certificate","penalty":"18% interest + late filing fee"},
-  {"id":"LABOUR-EMP-100","authority":"Labour Ministry","title":"Labour registration mandatory above 100 employees","applies_if":{"employees_gte":100},"required_document":"Labour Registration","penalty":"Suspension of operating license"},
-  {"id":"EXPORT-DGFT-01","authority":"DGFT","title":"Export license / IEC code for exporting entities","applies_if":{"exports":true},"required_document":"Export License","penalty":"Shipment seizure at customs"},
-  {"id":"ISO-9001-QMS","authority":"Voluntary Standard","title":"Quality Management System certification (buyer requirement)","applies_if":{"industry_contains":"*"},"required_document":"ISO 9001 Certificate","penalty":"Loss of enterprise contracts"},
-  {"id":"MOEF-EC-01","authority":"Pollution Control Board","title":"Environmental clearance for manufacturing units","applies_if":{"industry_contains":"Manufactur"},"required_document":"Environmental Clearance Certificate","penalty":"Plant shutdown order"},
-  {"id":"FSSAI-LIC-01","authority":"FSSAI","title":"Food business operating license","applies_if":{"industry_contains":"Food"},"required_document":"FSSAI License","penalty":"Seizure of stock + fine up to INR 5,00,000"},
-  {"id":"DPDP-ACT-01","authority":"MeitY","title":"Data protection compliance for entities handling personal data","applies_if":{"industry_contains":"IT"},"required_document":"Data Protection Policy","penalty":"Fine up to INR 250 crore under DPDP Act"},
-  {"id":"CDSCO-MED-01","authority":"CDSCO","title":"Manufacturing license for medical devices","applies_if":{"industry_contains":"Health"},"required_document":"CDSCO Medical Device License","penalty":"Product recall + license cancellation"},
-  {"id":"MCA-AOC4-01","authority":"MCA / Registrar of Companies","title":"Annual financial statement filing (Form AOC-4) within 30 days of AGM","applies_if":{"country_contains":"India"},"required_document":"AOC-4 Filing Acknowledgement","penalty":"Rs. 100/day per form with no cap; delays cascade into MGT-7"},
-  {"id":"MCA-MGT7-01","authority":"MCA / Registrar of Companies","title":"Annual return filing (Form MGT-7 / MGT-7A) within 60 days of AGM","applies_if":{"country_contains":"India"},"required_document":"MGT-7 Annual Return Filing","penalty":"Rs. 100/day per form; 3 consecutive years of non-filing triggers automatic 5-year director disqualification under Section 164(2)"},
-  {"id":"MCA-ADT1-01","authority":"MCA / Registrar of Companies","title":"Statutory auditor appointment (Form ADT-1) within 15 days of AGM","applies_if":{"country_contains":"India"},"required_document":"ADT-1 Auditor Appointment Filing","penalty":"AOC-4 cannot be filed without a valid auditor appointment on record"},
-  {"id":"MCA-DIR3KYC-01","authority":"MCA","title":"Director KYC (Form DIR-3 KYC) - triennial filing effective 31 Mar 2026 (previously annual)","applies_if":{"country_contains":"India"},"required_document":"DIR-3 KYC Confirmation","penalty":"DIN deactivation, which blocks the director from signing AOC-4/MGT-7, plus a reactivation fee"},
-  {"id":"MCA-DPT3-01","authority":"MCA / Registrar of Companies","title":"Annual return of deposits and exempted deposits (Form DPT-3), due by 30 June","applies_if":{"country_contains":"India"},"required_document":"DPT-3 Annual Return Filing","penalty":"Fine on the company and officers in default"},
-  {"id":"MCA-MSME1-01","authority":"MCA / Registrar of Companies","title":"Half-yearly return of outstanding MSME dues beyond 45 days (Form MSME-1)","applies_if":{"country_contains":"India"},"required_document":"MSME-1 Outstanding Dues Return","penalty":"Fine on the company and every officer in default under Section 405"}
-];
+// Point this at wherever `uvicorn api.main:app` is actually running.
+const API_BASE = "http://localhost:8000";
 
 const SAMPLE_ORG = {
   org_name: "SkyLogix Robotics Pvt Ltd",
-  industry: "Drone Delivery / Logistics",
+  entity_id: "SKYLOGIX",
+  entity_type: "PRIVATE_LIMITED",
+  status: "ACTIVE",
   country: "India",
-  employees: 260,
-  exports: true,
-  documents: [
-    {type: "GST Certificate", issued: "2023-04-01", expiry: "2026-03-31"},
-    {type: "ISO 9001 Certificate", issued: "2024-01-10", expiry: "2026-01-10"},
-    {type: "Remote Pilot License", issued: "2023-11-01", expiry: "2025-11-01"},
-    {type: "Labour Registration", issued: "2022-06-15", expiry: null},
-    {type: "AOC-4 Filing Acknowledgement", issued: "2025-10-20", expiry: null},
-    {type: "DIR-3 KYC Confirmation", issued: "2023-09-15", expiry: null}
+  has_msme_supplier_dues: true,
+  directors: [
+    {din: "00111111", name: "A. Rao", has_active_din: true},
+    {din: "00222222", name: "B. Iyer", has_active_din: true}
   ]
 };
 
-function normalizeOrg(raw){
-  const org = Object.assign({documents: [], exports: false, employees: 0}, raw);
-  const today = new Date(); today.setHours(0,0,0,0);
-  org.documents = (org.documents || []).map(d => {
-    const doc = Object.assign({}, d);
-    doc.expired = false; doc.expires_soon = false; doc.days_to_expiry = null;
-    if (doc.expiry) {
-      const expiry = new Date(doc.expiry + "T00:00:00");
-      const days = Math.round((expiry - today) / 86400000);
-      doc.days_to_expiry = days;
-      doc.expired = days < 0;
-      doc.expires_soon = days >= 0 && days <= 60;
-    }
-    return doc;
+async function callAssess(goal, profile, obligationId, subjectId) {
+  const resp = await fetch(`${API_BASE}/assess`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      goal, profile,
+      obligation_id: obligationId || null,
+      subject_id: subjectId || null,
+      as_of: new Date().toISOString().slice(0, 10),
+    }),
   });
-  return org;
+  if (!resp.ok) throw new Error(`API error ${resp.status}: ${await resp.text()}`);
+  return resp.json();
 }
 
-function ruleMatches(org, cond){
-  if (cond.industry_contains !== undefined) {
-    if (cond.industry_contains !== "*" &&
-        !(org.industry || "").toLowerCase().includes(cond.industry_contains.toLowerCase())) return false;
-  }
-  if (cond.employees_gte !== undefined && (org.employees || 0) < cond.employees_gte) return false;
-  if (cond.exports !== undefined && Boolean(org.exports) !== cond.exports) return false;
-  if (cond.country_contains !== undefined &&
-      !(org.country || "").toLowerCase().includes(cond.country_contains.toLowerCase())) return false;
-  return true;
-}
-
-function findApplicableRegulations(org){
-  return REGULATIONS.filter(r => ruleMatches(org, r.applies_if));
-}
-
-function analyzeGaps(org, applicable){
-  const held = {};
-  org.documents.forEach(d => held[d.type] = d);
-  const gaps = applicable.map(reg => {
-    const doc = held[reg.required_document];
-    let severity, status;
-    if (!doc) { severity = "High"; status = "Missing"; }
-    else if (doc.expired) { severity = "High"; status = "Expired"; }
-    else if (doc.expires_soon) { severity = "Medium"; status = `Expires in ${doc.days_to_expiry} days`; }
-    else { severity = "Low"; status = "OK"; }
-    return {
-      regulation_id: reg.id, authority: reg.authority, title: reg.title,
-      required_document: reg.required_document, status, severity,
-      penalty_if_ignored: reg.penalty,
-    };
+async function callDecision(threadId, approved) {
+  const resp = await fetch(`${API_BASE}/assess/${threadId}/decision`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({approved}),
   });
-  const total = gaps.length;
-  const okCount = gaps.filter(g => g.severity === "Low").length;
-  return {
-    gaps,
-    compliance_pct: total ? Math.round((okCount/total)*100) : 100,
-    high_risk_count: gaps.filter(g => g.severity === "High").length,
-    medium_risk_count: gaps.filter(g => g.severity === "Medium").length,
-  };
+  if (!resp.ok) throw new Error(`API error ${resp.status}: ${await resp.text()}`);
+  return resp.json();
 }
-
-const SEVERITY_WEIGHT = {High: 40, Medium: 20, Low: 5};
-function priorityScore(gap){
-  let score = SEVERITY_WEIGHT[gap.severity];
-  if (gap.status === "Missing") score += 15;
-  if (gap.status === "Expired") score += 20;
-  if (gap.status.startsWith("Expires in")) score += 10;
-  return Math.min(score, 100);
-}
-
-function generateOkrs(gapReport){
-  const okrs = gapReport.gaps.filter(g => g.severity !== "Low").map(g => ({
-    objective: `Resolve ${g.status.toLowerCase()} status for ${g.required_document}`,
-    linked_regulation: g.regulation_id,
-    key_results: [
-      `Collect / renew: ${g.required_document}`,
-      `Verify against ${g.authority} requirement (${g.regulation_id})`,
-      "Upload signed document to central repository",
-      "Compliance officer sign-off",
-    ],
-    progress_pct: 0,
-    priority_score: priorityScore(g),
-    risk_if_ignored: g.penalty_if_ignored,
-  }));
-  okrs.sort((a,b) => b.priority_score - a.priority_score);
-  return okrs;
-}
-
-function buildReport(org, gapReport, okrs){
-  return {
-    generated_on: new Date().toISOString().slice(0,10),
-    org_name: org.org_name || "Unnamed organization",
-    industry: org.industry || "Unspecified",
-    compliance_pct: gapReport.compliance_pct,
-    high_risk_count: gapReport.high_risk_count,
-    medium_risk_count: gapReport.medium_risk_count,
-    gaps: gapReport.gaps,
-    okrs,
-  };
-}
-
-function runPipeline(rawOrg){
-  const org = normalizeOrg(rawOrg);
-  const applicable = findApplicableRegulations(org);
-  const gapReport = analyzeGaps(org, applicable);
-  const okrs = generateOkrs(gapReport);
-  return buildReport(org, gapReport, okrs);
-}
-
-let docRowCount = 0;
-
-function addDocRow(doc){
-  doc = doc || {type:"", issued:"", expiry:""};
-  const id = docRowCount++;
-  const tbody = document.getElementById('doc-rows');
-  const tr = document.createElement('tr');
-  tr.id = 'doc-row-' + id;
-  tr.innerHTML = `
-    <td><input type="text" list="doctype-list" value="${escAttr(doc.type)}" id="doc-type-${id}"></td>
-    <td><input type="date" value="${escAttr(doc.issued || '')}" id="doc-issued-${id}"></td>
-    <td><input type="date" value="${escAttr(doc.expiry || '')}" id="doc-expiry-${id}"></td>
-    <td><button class="row-remove" onclick="document.getElementById('doc-row-${id}').remove()">×</button></td>
-  `;
-  tbody.appendChild(tr);
-}
-
-function escAttr(s){ return String(s).replace(/"/g, '&quot;'); }
 
 function switchTab(tab){
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -446,49 +302,38 @@ function switchTab(tab){
 }
 
 function loadSample(){
-  fillForm(SAMPLE_ORG);
+  document.getElementById('f-name').value = SAMPLE_ORG.org_name;
+  document.getElementById('f-country').value = SAMPLE_ORG.country;
+  document.getElementById('f-entity-type').value = SAMPLE_ORG.entity_type;
+  document.getElementById('f-status').value = SAMPLE_ORG.status;
+  document.getElementById('f-msme').checked = SAMPLE_ORG.has_msme_supplier_dues;
   document.getElementById('raw-json').value = JSON.stringify(SAMPLE_ORG, null, 2);
+  document.getElementById('f-goal').value = "Assess compliance posture for " + SAMPLE_ORG.org_name;
 }
 
 function clearForm(){
-  fillForm({org_name:"", industry:"", country:"India", employees:0, exports:false, documents:[]});
+  document.getElementById('f-name').value = "";
+  document.getElementById('f-country').value = "India";
+  document.getElementById('f-entity-type').value = "PRIVATE_LIMITED";
+  document.getElementById('f-status').value = "ACTIVE";
+  document.getElementById('f-msme').checked = false;
   document.getElementById('raw-json').value = "";
+  document.getElementById('f-goal').value = "";
   document.getElementById('error-msg').textContent = "";
 }
 
-function fillForm(org){
-  document.getElementById('f-name').value = org.org_name || "";
-  document.getElementById('f-industry').value = org.industry || "";
-  document.getElementById('f-country').value = org.country || "India";
-  document.getElementById('f-employees').value = org.employees || 0;
-  document.getElementById('f-exports').checked = Boolean(org.exports);
-  document.getElementById('doc-rows').innerHTML = "";
-  docRowCount = 0;
-  (org.documents || []).forEach(addDocRow);
-  if ((org.documents || []).length === 0) addDocRow();
-}
-
 function readFormOrg(){
-  const rows = document.querySelectorAll('#doc-rows tr');
-  const documents = [];
-  rows.forEach(tr => {
-    const idx = tr.id.replace('doc-row-', '');
-    const type = document.getElementById('doc-type-' + idx).value.trim();
-    const issued = document.getElementById('doc-issued-' + idx).value || null;
-    const expiry = document.getElementById('doc-expiry-' + idx).value || null;
-    if (type) documents.push({type, issued, expiry});
-  });
   return {
     org_name: document.getElementById('f-name').value.trim() || "Unnamed organization",
-    industry: document.getElementById('f-industry').value.trim() || "Unspecified",
+    entity_id: (document.getElementById('f-name').value.trim() || "UNNAMED").toUpperCase().replace(/\s+/g, "_"),
     country: document.getElementById('f-country').value.trim() || "India",
-    employees: parseInt(document.getElementById('f-employees').value, 10) || 0,
-    exports: document.getElementById('f-exports').checked,
-    documents,
+    entity_type: document.getElementById('f-entity-type').value,
+    status: document.getElementById('f-status').value,
+    has_msme_supplier_dues: document.getElementById('f-msme').checked,
   };
 }
 
-function runAnalysis(){
+async function runAnalysis(){
   const errorEl = document.getElementById('error-msg');
   errorEl.textContent = "";
   const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
@@ -500,81 +345,119 @@ function runAnalysis(){
       org = JSON.parse(raw);
     } else {
       org = readFormOrg();
-      if (!org.documents.length) { errorEl.textContent = "Add at least one document, or switch to Paste JSON."; return; }
     }
   } catch (e) {
     errorEl.textContent = "Couldn't parse that JSON: " + e.message;
     return;
   }
-  const report = runPipeline(org);
-  renderResults(report);
+  const goal = document.getElementById('f-goal').value.trim()
+    || ("Assess compliance posture for " + (org.org_name || "this company"));
+
+  errorEl.textContent = "Contacting the assessment API...";
+  try {
+    const result = await callAssess(goal, org);
+    errorEl.textContent = "";
+    renderApiResult(result, org);
+  } catch (e) {
+    errorEl.textContent = "Request failed: " + e.message + " — is `uvicorn api.main:app --port 8000` running?";
+  }
 }
 
-function renderResults(report){
-  document.getElementById('org-title').textContent = report.org_name;
-  document.getElementById('org-subtitle').innerHTML = `${report.industry} &nbsp;·&nbsp; generated <span>${report.generated_on}</span>`;
-  const stamp = document.getElementById('stamp');
-  stamp.style.visibility = 'visible';
-  document.getElementById('stamp-pct').textContent = report.compliance_pct + '%';
+function renderApiResult(result, org){
+  if (result.status === "pending_approval") {
+    const p = result.pending_approval;
+    document.getElementById('stamp').style.visibility = 'visible';
+    document.getElementById('stamp-pct').textContent = "?";
+    document.getElementById('org-title').textContent = org.org_name || "Unnamed organization";
+    document.getElementById('org-subtitle').textContent = "Awaiting human approval before this run can finish.";
+    document.getElementById('results').innerHTML = `
+      <div class="all-clear" style="text-align:left;">
+        <h2 style="margin-top:0;">Awaiting human approval</h2>
+        <p><b>${p.obligation_id}</b>${p.subject_id ? " (director " + p.subject_id + ")" : ""} — ${p.period_label}, due ${p.due_date}</p>
+        <ul>${p.checklist.map(c => `<li>${c}</li>`).join('')}</ul>
+        <div style="display:flex; gap:10px; margin-top:14px;">
+          <button class="btn btn-primary" onclick="approveThread('${result.thread_id}', true, ${JSON.stringify(org).replace(/"/g,'&quot;')})">Approve</button>
+          <button class="btn" onclick="approveThread('${result.thread_id}', false, ${JSON.stringify(org).replace(/"/g,'&quot;')})">Reject</button>
+        </div>
+      </div>`;
+    return;
+  }
 
-  const gaps = report.gaps, okrs = report.okrs;
-  const riskCls = report.compliance_pct >= 80 ? 'risk-ok' : report.compliance_pct >= 50 ? 'risk-med' : 'risk-high';
+  const r = result.final_report;
+  document.getElementById('org-title').textContent = org.org_name || "Unnamed organization";
+  document.getElementById('org-subtitle').innerHTML =
+    `generated <span>${new Date().toISOString().slice(0,10)}</span> &nbsp;·&nbsp; critic: <span>${r.critic_passed ? "PASSED" : "NEEDS REVIEW"}</span>`;
+  document.getElementById('stamp').style.visibility = 'visible';
+  document.getElementById('stamp-pct').textContent = r.critic_passed ? "OK" : "!!";
+
+  const instances = r.instances || [];
+  const blockedCount = instances.filter(i => i.status === "BLOCKED").length;
+  const lateCount = instances.filter(i => i.status === "LATE").length;
   const summaryCells = [
-    {num: report.compliance_pct + '%', cap: 'Compliance score', cls: riskCls},
-    {num: report.high_risk_count, cap: 'High risk items', cls: 'risk-high'},
-    {num: report.medium_risk_count, cap: 'Medium risk items', cls: 'risk-med'},
-    {num: okrs.length, cap: 'Open objectives', cls: ''},
+    {num: r.critic_passed ? "PASS" : "REVIEW", cap: "Critic verdict", cls: r.critic_passed ? "risk-ok" : "risk-high"},
+    {num: blockedCount, cap: "Blocked filings", cls: blockedCount ? "risk-high" : "risk-ok"},
+    {num: lateCount, cap: "Overdue filings", cls: lateCount ? "risk-high" : "risk-ok"},
+    {num: instances.length, cap: "Tracked instances", cls: ""},
   ];
 
-  const gapsHtml = gaps.length ? `
-    <table class="ledger">
-      <thead><tr><th>Regulation</th><th>Authority</th><th>Required document</th><th>Status</th><th>Severity</th><th>Penalty if ignored</th></tr></thead>
-      <tbody>
-        ${gaps.map(g => `
-          <tr>
-            <td><span class="reg-id">${g.regulation_id}</span></td>
-            <td>${g.authority}</td>
-            <td>${g.required_document}</td>
-            <td>${g.status}</td>
-            <td><span class="badge ${g.severity}">${g.severity}</span></td>
-            <td class="penalty">${g.penalty_if_ignored}</td>
-          </tr>`).join('')}
-      </tbody>
-    </table>` : `<div class="all-clear">No applicable regulations matched this company profile.</div>`;
+  const rows = instances.map(i => {
+    const sevCls = (i.status === 'BLOCKED' || i.status === 'LATE') ? 'High'
+                 : i.status === 'NOT_STARTED' ? 'Medium' : 'Low';
+    return `
+      <tr>
+        <td><span class="reg-id">${i.obligation_id}</span>${i.subject_id ? `<br><span class="penalty">${i.subject_id}</span>` : ''}</td>
+        <td>${i.period_label}</td>
+        <td>${i.due_date}</td>
+        <td><span class="badge ${sevCls}">${i.status}</span></td>
+        <td class="penalty">${i.blocked_reason || i.due_date_basis}</td>
+      </tr>`;
+  }).join('');
 
-  const okrsHtml = okrs.length ? `
+  const gapsHtml = instances.length ? `
+    <table class="ledger">
+      <thead><tr><th>Obligation</th><th>Period</th><th>Due</th><th>Status</th><th>Notes</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` : `<div class="all-clear">No obligation instances were materialised for this profile — check the "Cited findings" section for what's undetermined.</div>`;
+
+  const claims = (r.answer && r.answer.claims) || [];
+  const claimsHtml = claims.length ? `
     <div class="okr-grid">
-      ${okrs.map(o => `
-        <div class="okr-card ${o.priority_score >= 50 ? 'p-high' : o.priority_score >= 25 ? 'p-med' : ''}">
+      ${claims.map(c => `
+        <div class="okr-card ${c.text.includes('BLOCKED') ? 'p-high' : ''}">
           <div class="okr-top">
             <div>
-              <div class="okr-obj">${o.objective}</div>
-              <div class="okr-reg">linked · ${o.linked_regulation}</div>
+              <div class="okr-obj">${c.text}</div>
+              <div class="okr-reg">${c.source} · ${c.citation}</div>
             </div>
-            <div class="priority">Priority<span class="score">${o.priority_score}</span></div>
           </div>
-          <ul class="kr-list">${o.key_results.map(kr => `<li>${kr}</li>`).join('')}</ul>
-          <div class="risk-note">Risk if ignored: ${o.risk_if_ignored}</div>
         </div>`).join('')}
-    </div>` : `<div class="all-clear">Every applicable regulation is currently satisfied — no open objectives.</div>`;
+    </div>` : `<div class="all-clear">${(r.answer && r.answer.refusal_reason) || 'No grounded claims for this goal.'}</div>`;
 
   document.getElementById('results').innerHTML = `
     <div class="summary">
       ${summaryCells.map(c => `<div class="cell"><div class="num ${c.cls}">${c.num}</div><div class="cap">${c.cap}</div></div>`).join('')}
     </div>
     <section>
-      <div class="section-head"><span class="idx">01</span><h2>Compliance Gap Ledger</h2><span class="sub">Gap Analysis Agent</span></div>
+      <div class="section-head"><span class="idx">01</span><h2>Compliance Calendar</h2><span class="sub">live from the agent graph — plan → execute → critic</span></div>
       ${gapsHtml}
     </section>
     <section>
-      <div class="section-head"><span class="idx">02</span><h2>Objectives &amp; Key Results</h2><span class="sub">OKR Intelligence Agent · ranked by priority</span></div>
-      ${okrsHtml}
+      <div class="section-head"><span class="idx">02</span><h2>Cited findings</h2><span class="sub">every claim traces to a register entry or a real statutory citation</span></div>
+      ${claimsHtml}
     </section>
   `;
 }
 
-fillForm({org_name:"", industry:"", country:"India", employees:0, exports:false, documents:[]});
-document.getElementById('raw-json').value = JSON.stringify(SAMPLE_ORG, null, 2);
+async function approveThread(threadId, approved, org){
+  try {
+    const result = await callDecision(threadId, approved);
+    renderApiResult(result, org);
+  } catch (e) {
+    document.getElementById('error-msg').textContent = "Decision failed: " + e.message;
+  }
+}
+
+clearForm();
 </script>
 </body>
 </html>
